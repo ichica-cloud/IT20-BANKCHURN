@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2 class="mb-4">📊 Model Performance Comparison</h2>
+
+<!-- Dataset Shape Information -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">📐 Dataset Shape Transformation</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Original Dataset Shape:</strong> {{ original_shape.rows }} rows × {{ original_shape.cols }} columns</p>
+                <p><strong>Final Dataset Shape:</strong> {{ final_shape.rows }} rows × {{ final_shape.cols }} columns</p>
+                <p><strong>Best Model:</strong> {{ best_model }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Model Performance Table -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">📈 Model Performance Metrics</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Metric</th>
+                        <th>Logistic Regression</th>
+                        <th>Random Forest</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Accuracy</td>
+                        <td>{{ "%.4f"|format(lr_metrics.accuracy) if lr_metrics else 'N/A' }}</td>
+                        <td>{{ "%.4f"|format(rf_metrics.accuracy) if rf_metrics else 'N/A' }}</td>
+                    </tr>
+                    <tr>
+                        <td>Precision</td>
+                        <td>{{ "%.4f"|format(lr_metrics.precision) if lr_metrics else 'N/A' }}</td>
+                        <td>{{ "%.4f"|format(rf_metrics.precision) if rf_metrics else 'N/A' }}</td>
+                    </tr>
+                    <tr>
+                        <td>Recall</td>
+                        <td>{{ "%.4f"|format(lr_metrics.recall) if lr_metrics else 'N/A' }}</td>
+                        <td>{{ "%.4f"|format(rf_metrics.recall) if rf_metrics else 'N/A' }}</td>
+                    </tr>
+                    <tr>
+                        <td>F1-Score</td>
+                        <td>{{ "%.4f"|format(lr_metrics.f1_score) if lr_metrics else 'N/A' }}</td>
+                        <td>{{ "%.4f"|format(rf_metrics.f1_score) if rf_metrics else 'N/A' }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Comparison Chart -->
+{% if comparison_chart %}
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">📊 Comparison Chart</h5>
+    </div>
+    <div class="card-body text-center">
+        <img src="data:image/png;base64,{{ comparison_chart }}" class="img-fluid" alt="Chart">
+    </div>
+</div>
+{% endif %}
+
+<!-- Feature Importance -->
+{% if feature_importance %}
+<div class="card mb-4">
+    <div class="card-header bg-info text-white">
+        <h5 class="mb-0">🔍 Feature Importance</h5>
+    </div>
+    <div class="card-body">
+        {% if feature_importance_chart %}
+        <div class="text-center mb-4">
+            <img src="data:image/png;base64,{{ feature_importance_chart }}" class="img-fluid" alt="Features">
+        </div>
+        {% endif %}
+        
+        <div class="table-responsive">
+            <table class="table table-sm">
+                <thead>
+                    <tr>
+                        <th>Feature</th>
+                        <th>Importance</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for feature in feature_importance[:10] %}
+                    <tr>
+                        <td>{{ feature.feature }}</td>
+                        <td>
+                            <div class="progress">
+                                <div class="progress-bar" style="width: {{ feature.importance * 100 }}%">
+                                    {{ "%.1f"|format(feature.importance * 100) }}%
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

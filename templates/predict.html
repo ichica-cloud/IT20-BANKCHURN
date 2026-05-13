@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2 class="mb-4">🔮 Customer Churn Prediction</h2>
+
+<!-- Dataset Status Alert -->
+{% if dataset_info %}
+<div class="alert alert-info alert-dismissible fade show">
+    <strong>📊 Active Dataset:</strong> {{ dataset_info.filename }} 
+    ({{ dataset_info.rows }} rows, {{ dataset_info.columns }} columns)
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+{% else %}
+<div class="alert alert-warning">
+    <strong>⚠️ No Dataset Found!</strong> Please <a href="{{ url_for('dataset') }}">upload a dataset</a> first.
+</div>
+{% endif %}
+
+<!-- Model Status Alert -->
+{% if not model_exists %}
+{% else %}
+<div class="alert alert-success">
+    <strong>✅ Model Ready!</strong> The model has been trained and is ready for predictions.
+</div>
+{% endif %}
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">📝 Customer Information</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label>Age</label>
+                        <input type="number" name="age" class="form-control" required placeholder="e.g., 45">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label>Balance ($)</label>
+                        <input type="number" name="balance" class="form-control" required placeholder="e.g., 125000">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label>Credit Score</label>
+                        <input type="number" name="credit_score" class="form-control" required placeholder="e.g., 720">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label>Geography</label>
+                        <select name="geography" class="form-control" required>
+                            <option value="France">France</option>
+                            <option value="Germany">Germany</option>
+                            <option value="Spain">Spain</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label>Gender</label>
+                        <select name="gender" class="form-control" required>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label>Tenure (years)</label>
+                        <input type="number" name="tenure" class="form-control" required placeholder="e.g., 5">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label>Number of Products</label>
+                        <input type="number" name="num_products" class="form-control" required placeholder="e.g., 2">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label>Has Credit Card?</label>
+                        <select name="has_cr_card" class="form-control" required>
+                            <option value="1">Yes</option>
+                            <option value="0">No</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label>Is Active Member?</label>
+                        <select name="is_active" class="form-control" required>
+                            <option value="1">Yes</option>
+                            <option value="0">No</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label>Estimated Salary ($)</label>
+                        <input type="number" name="estimated_salary" class="form-control" required placeholder="e.g., 85000">
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary w-100" {% if not model_exists %}disabled{% endif %}>
+                        🔮 Predict Churn Risk
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">ℹ️ How It Works</h5>
+            </div>
+            <div class="card-body">
+                <p>The prediction model uses patterns from your uploaded dataset to predict churn risk.</p>
+                
+                <h6>🔍 Key Factors that Influence Churn:</h6>
+                <ul>
+                    <li>Age (older customers have higher risk)</li>
+                    <li>Account balance (high balance = more likely to leave)</li>
+                    <li>Number of products (single product = high risk)</li>
+                    <li>Activity status (inactive members at risk)</li>
+                    <li>Geography (German customers show higher churn)</li>
+                </ul>
+                
+                <div class="alert alert-light mt-3">
+                    <strong>📊 Current Model Status:</strong>
+                    {% if model_exists %}
+                    <span class="text-success">✅ Trained and ready</span>
+                    {% else %}
+                    <span class="text-danger">❌ Not trained</span>
+                    {% endif %}
+                </div>
+                
+                <div class="alert alert-light">
+                    <strong>📁 Dataset Status:</strong>
+                    {% if dataset_info %}
+                    <span class="text-success">✅ Loaded ({{ dataset_info.filename }})</span>
+                    {% else %}
+                    <span class="text-danger">❌ No dataset</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

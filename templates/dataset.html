@@ -1,0 +1,321 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    .upload-area {
+        border: 2px dashed #4CAF50;
+        border-radius: 15px;
+        padding: 40px;
+        text-align: center;
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+    
+    .upload-area:hover {
+        border-color: #45a049;
+        background: linear-gradient(135deg, #e8edf5 0%, #b8c4d9 100%);
+        transform: translateY(-2px);
+    }
+    
+    .dataset-card {
+        border-radius: 15px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        transition: transform 0.3s;
+        margin-bottom: 20px;
+    }
+    
+    .dataset-card:hover {
+        transform: translateY(-5px);
+    }
+    
+    .stat-number {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #4CAF50;
+    }
+    
+    .progress-training {
+        background: linear-gradient(90deg, #4CAF50, #2196F3);
+        animation: pulse 1.5s infinite;
+    }
+    
+    @keyframes pulse {
+        0% { opacity: 0.6; }
+        50% { opacity: 1; }
+        100% { opacity: 0.6; }
+    }
+    
+    .feature-tag {
+        display: inline-block;
+        background: #e3f2fd;
+        color: #1976d2;
+        padding: 5px 12px;
+        border-radius: 20px;
+        margin: 3px;
+        font-size: 12px;
+    }
+    
+    .train-btn {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        padding: 12px 30px;
+        font-size: 1.1rem;
+        transition: all 0.3s;
+    }
+    
+    .train-btn:hover {
+        transform: scale(1.05);
+        box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+    }
+    
+    .train-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+    
+    .info-box {
+        background: #f8f9fa;
+        border-left: 4px solid #4CAF50;
+        padding: 15px;
+        border-radius: 10px;
+        margin: 15px 0;
+    }
+</style>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h2 class="mb-4">
+                <i class="fas fa-database"></i> Dataset Management
+                <small class="text-muted">Upload, preview, and train models</small>
+            </h2>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Left Column - Upload Section -->
+        <div class="col-md-5">
+            <!-- Upload Card -->
+            <div class="card dataset-card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-cloud-upload-alt"></i> Upload Dataset</h5>
+                </div>
+                <div class="card-body">
+                    <form action="{{ url_for('upload_dataset') }}" method="POST" enctype="multipart/form-data" id="uploadForm">
+                        <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+                            <i class="fas fa-file-upload" style="font-size: 48px; color: #4CAF50;"></i>
+                            <h4 class="mt-3">Click or Drag to Upload</h4>
+                            <p class="text-muted">Supported formats: CSV, Excel (XLSX, XLS)</p>
+                            <input type="file" name="file" id="fileInput" style="display: none;" accept=".csv,.xlsx,.xls" onchange="this.form.submit()">
+                        </div>
+                    </form>
+                    
+                    <div class="info-box mt-3">
+                        <i class="fas fa-info-circle text-info"></i>
+                        <strong>Dataset Requirements:</strong>
+                        <ul class="mt-2 mb-0">
+                            <li>Must contain an <code>Exited</code> column (0 = stayed, 1 = churned)</li>
+                            <li>Required columns: Age, Balance, CreditScore, Geography, Gender, Tenure, NumOfProducts, HasCrCard, IsActiveMember, EstimatedSalary</li>
+                            <li>Maximum file size: 16MB</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Current Dataset Info Card -->
+            {% if dataset_info %}
+            <div class="card dataset-card mt-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-chart-line"></i> Current Dataset</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <div class="stat-number">{{ dataset_info.rows }}</div>
+                            <small>Rows</small>
+                        </div>
+                        <div class="col-6">
+                            <div class="stat-number">{{ dataset_info.columns }}</div>
+                            <small>Columns</small>
+                        </div>
+                    </div>
+                    <hr>
+                    <p><strong>📁 Filename:</strong> {{ dataset_info.filename }}</p>
+                    
+                    <p><strong>📊 Target Column:</strong> 
+                        {% if dataset_info.has_target %}
+                        <span class="badge bg-success">Exited ✓</span>
+                        {% else %}
+                        <span class="badge bg-danger">Missing Exited column</span>
+                        {% endif %}
+                    </p>
+                    
+                    <p><strong>🔧 Features:</strong></p>
+                    <div>
+                        {% for col in dataset_info.column_names[:10] %}
+                        <span class="feature-tag">{{ col }}</span>
+                        {% endfor %}
+                        {% if dataset_info.column_names|length > 10 %}
+                        <span class="feature-tag">+{{ dataset_info.column_names|length - 10 }} more</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Right Column - Preview & Training -->
+        <div class="col-md-7">
+            <!-- Training Section -->
+            <div class="card dataset-card">
+                <div class="card-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                    <h5 class="mb-0"><i class="fas fa-brain"></i> Model Training</h5>
+                </div>
+                <div class="card-body">
+                    {% if dataset_info and dataset_info.has_target %}
+                    <div class="alert alert-success">
+                        <i class="fas fa-check-circle"></i> 
+                        Dataset ready for training! Your dataset has {{ dataset_info.rows }} rows with target column 'Exited'.
+                    </div>
+                    
+                    <form action="{{ url_for('train_model') }}" method="POST" id="trainForm">
+                        <div class="training-options">
+                            <h6><i class="fas fa-cog"></i> Training Configuration:</h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="lrCheck" checked disabled>
+                                        <label class="form-check-label">Logistic Regression</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="rfCheck" checked disabled>
+                                        <label class="form-check-label">Random Forest</label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="alert alert-info mt-3">
+                                <i class="fas fa-clock"></i> 
+                                Estimated training time: <strong>10-30 seconds</strong> (depends on dataset size)
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary train-btn w-100" id="trainBtn">
+                                <i class="fas fa-play"></i> Start Training
+                            </button>
+                            
+                            <div id="trainingProgress" style="display: none; margin-top: 20px;">
+                                <div class="progress">
+                                    <div class="progress-bar progress-training" style="width: 0%" id="progressBar">
+                                        <span id="progressText">0%</span>
+                                    </div>
+                                </div>
+                                <p class="text-center mt-2" id="trainingStatus">
+                                    <i class="fas fa-spinner fa-spin"></i> Training in progress...
+                                </p>
+                            </div>
+                        </div>
+                    </form>
+                    
+                    {% elif dataset_info and not dataset_info.has_target %}
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>Missing Target Column!</strong> Your dataset must contain an <code>Exited</code> column for training.
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        Please upload a dataset first to start training.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Dataset Preview -->
+            {% if dataset_preview %}
+            <div class="card dataset-card mt-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-table"></i> Dataset Preview (First 20 rows)</h5>
+                </div>
+                <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                    <div class="table-responsive">
+                        {{ dataset_preview | safe }}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Dataset Statistics -->
+            <div class="card dataset-card mt-4">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="fas fa-chart-bar"></i> Statistical Summary</h5>
+                </div>
+                <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                    <div class="table-responsive">
+                        {{ dataset_stats | safe }}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('trainForm')?.addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const trainBtn = document.getElementById('trainBtn');
+    const progressDiv = document.getElementById('trainingProgress');
+    const progressBar = document.getElementById('progressBar');
+    const progressText = document.getElementById('progressText');
+    
+    // Disable button and show progress
+    trainBtn.disabled = true;
+    trainBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Training...';
+    progressDiv.style.display = 'block';
+    
+    // Animate progress bar
+    let progress = 0;
+    const interval = setInterval(() => {
+        progress += 5;
+        if (progress <= 90) {
+            progressBar.style.width = progress + '%';
+            progressText.textContent = progress + '%';
+        }
+        
+        if (progress === 30) {
+            document.getElementById('trainingStatus').innerHTML = '<i class="fas fa-database"></i> Processing dataset...';
+        } else if (progress === 60) {
+            document.getElementById('trainingStatus').innerHTML = '<i class="fas fa-brain"></i> Training Random Forest...';
+        } else if (progress === 80) {
+            document.getElementById('trainingStatus').innerHTML = '<i class="fas fa-chart-line"></i> Optimizing model...';
+        }
+    }, 300);
+    
+    // Submit the form
+    fetch('{{ url_for("train_model") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams(new FormData(this))
+    }).then(response => {
+        clearInterval(interval);
+        progressBar.style.width = '100%';
+        progressText.textContent = '100%';
+        document.getElementById('trainingStatus').innerHTML = '<i class="fas fa-check-circle"></i> Training complete! Redirecting...';
+        
+        setTimeout(() => {
+            window.location.href = '{{ url_for("model_comparison") }}';
+        }, 1500);
+    }).catch(error => {
+        clearInterval(interval);
+        document.getElementById('trainingStatus').innerHTML = '<i class="fas fa-exclamation-triangle"></i> Training failed. Please try again.';
+        trainBtn.disabled = false;
+        trainBtn.innerHTML = '<i class="fas fa-play"></i> Start Training';
+    });
+});
+</script>
+{% endblock %}
